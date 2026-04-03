@@ -32,25 +32,31 @@ const CreateListing = () => {
   const navigate = useNavigate();
   const createMutation = useCreateListing();
   const [photos, setPhotos] = useState([]);
-  const [form, setForm] = useState({
-    title: '',
-    description: '',
-    quantity: '',
-    unit: 'servings',
-    category: 'cooked_meals',
-    condition: 'fresh',
-    address: '',
-    lat: '',
-    lng: '',
-    expiryAt: '',
-    readyAt: '',
+  
+  const [form, setForm] = useState(() => {
+    const d = new Date();
+    d.setHours(d.getHours() + 6); // Add 6 hours
+    d.setMinutes(d.getMinutes() - d.getTimezoneOffset()); // Shift to local timezone
+    return {
+      title: '',
+      description: '',
+      quantity: '',
+      unit: 'servings',
+      category: 'cooked_meals',
+      condition: 'fresh',
+      address: '',
+      lat: '',
+      lng: '',
+      expiryAt: d.toISOString().slice(0, 16),
+      readyAt: '',
+    };
   });
 
   const updateForm = (field, value) => setForm((prev) => ({ ...prev, [field]: value }));
 
   const handlePhotoChange = (e) => {
     const files = Array.from(e.target.files).slice(0, 5);
-    setPhotos(files);
+    setPhotos((prev) => [...prev, ...files].slice(0, 5));
   };
 
   const removePhoto = (index) => {
@@ -62,7 +68,10 @@ const CreateListing = () => {
     const formData = new FormData();
 
     Object.entries(form).forEach(([key, value]) => {
-      if (value) formData.append(key, value);
+      // Don't append empty values
+      if (value !== '' && value !== null && value !== undefined) {
+        formData.append(key, value);
+      }
     });
 
     photos.forEach((photo) => {
@@ -72,15 +81,9 @@ const CreateListing = () => {
     try {
       await createMutation.mutateAsync(formData);
       navigate('/donor/listings');
-    } catch (err) {
+    } catch {
       // error handled by hook
     }
-  };
-
-  // Set default expiry (6 hours from now)
-  const getDefaultExpiry = () => {
-    const d = new Date(Date.now() + 6 * 60 * 60 * 1000);
-    return d.toISOString().slice(0, 16);
   };
 
   return (
@@ -226,7 +229,7 @@ const CreateListing = () => {
             <Input
               label="Expiry Date/Time *"
               type="datetime-local"
-              value={form.expiryAt || getDefaultExpiry()}
+              value={form.expiryAt}
               onChange={(e) => updateForm('expiryAt', e.target.value)}
               required
             />

@@ -1,9 +1,7 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { HiMail, HiLockClosed } from 'react-icons/hi';
+import { HiMail, HiLockClosed, HiArrowRight } from 'react-icons/hi';
 import useAuthStore from '../../store/authStore';
-import Button from '../../components/ui/Button';
-import Input from '../../components/ui/Input';
 import toast from 'react-hot-toast';
 
 const LoginPage = () => {
@@ -25,128 +23,161 @@ const LoginPage = () => {
   };
 
   return (
-    <div className="min-h-screen flex relative overflow-hidden bg-surface-50">
-      {/* Global Ambient Background */}
-      <div className="bg-ambient pointer-events-none" />
+    <div className="min-h-screen w-full flex font-sans selection:bg-emerald-100 selection:text-emerald-900">
+      
+      {/* Left Panel: Deep Dark Emerald Branding */}
+      <div className="hidden lg:flex flex-col justify-between w-1/2 bg-zinc-950 relative overflow-hidden p-12 xl:p-24 border-r border-zinc-900">
+        <div 
+          className="absolute inset-0 opacity-[0.03] pointer-events-none"
+          style={{ backgroundImage: 'radial-gradient(circle at 2px 2px, white 1px, transparent 0)', backgroundSize: '32px 32px' }}
+        />
+        <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-emerald-900/20 to-transparent pointer-events-none" />
 
-      {/* Left: Interactive Splash Panel */}
-      <div className="hidden lg:flex lg:w-1/2 relative bg-surface-950/80 backdrop-blur-3xl border-r border-white/10 items-center justify-center p-16 animate-fade-in z-10 overflow-hidden">
-        {/* Animated Mesh Gradients within Dark Panel */}
-        <div className="absolute top-[-20%] left-[-10%] w-[80%] h-[80%] bg-primary-900 rounded-full blur-[120px] opacity-60 animate-pulse-soft" />
-        <div className="absolute bottom-[-20%] right-[-10%] w-[60%] h-[60%] bg-accent-900 rounded-full blur-[100px] opacity-40 animate-pulse-soft" style={{ animationDelay: '-5s' }} />
-
-        <div className="relative z-10 text-white max-w-lg">
-          <div className="w-24 h-24 rounded-3xl bg-gradient-to-br from-primary-400 to-primary-600 flex items-center justify-center text-5xl font-black mb-10 shadow-[0_0_40px_rgba(0,230,118,0.3)] animate-scale-in">
-            R
+        <div className="relative z-10 flex items-center gap-3">
+          <div className="w-10 h-10 bg-emerald-500 rounded-lg flex items-center justify-center shadow-[0_0_15px_rgba(16,185,129,0.2)]">
+            <span className="text-zinc-950 font-bold text-xl tracking-tighter">Z</span>
           </div>
-          <h1 className="text-6xl font-black mb-6 leading-[1.1] heading-font tracking-tight">
-            Stop Waste. <br />
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary-400 to-accent-300">
-              Start Saving.
-            </span>
+          <span className="text-white text-xl font-semibold tracking-tight">ResQFood</span>
+        </div>
+
+        <div className="relative z-10 max-w-xl mt-auto">
+          <h1 className="text-4xl xl:text-5xl font-medium text-white leading-[1.1] tracking-tight mb-6">
+            Redistribute surplus.<br />
+            <span className="text-emerald-400">Eliminate waste.</span>
           </h1>
-          <p className="text-xl text-surface-300 mb-12 leading-relaxed font-medium">
-            Join the most advanced, real-time food redistribution network globally. Connect instantly with those in need.
+          <p className="text-zinc-400 text-lg leading-relaxed mb-12">
+            The enterprise-grade platform connecting food donors with NGOs and volunteers in real-time. Fair, fast, and measurable impact.
           </p>
 
-          <div className="grid grid-cols-3 gap-6 text-center stagger-children">
-            <div className="bg-surface-900/50 border border-surface-800 backdrop-blur-xl rounded-3xl p-6 hover:bg-surface-800 transition-colors">
-              <p className="text-3xl font-black text-primary-400 heading-font mb-1">10K+</p>
-              <p className="text-xs text-surface-400 font-bold uppercase tracking-wider">Meals</p>
+          <div className="flex items-center gap-8 border-t border-zinc-800/50 pt-8">
+            <div>
+              <p className="text-3xl font-semibold text-white tracking-tight">10k+</p>
+              <p className="text-xs text-zinc-500 font-bold mt-1 uppercase tracking-wider">Meals Saved</p>
             </div>
-            <div className="bg-surface-900/50 border border-surface-800 backdrop-blur-xl rounded-3xl p-6 hover:bg-surface-800 transition-colors">
-              <p className="text-3xl font-black text-primary-400 heading-font mb-1">500+</p>
-              <p className="text-xs text-surface-400 font-bold uppercase tracking-wider">Donors</p>
+            <div className="w-px h-12 bg-zinc-800/50" />
+            <div>
+              <p className="text-3xl font-semibold text-white tracking-tight">98%</p>
+              <p className="text-xs text-zinc-500 font-bold mt-1 uppercase tracking-wider">Claim Rate</p>
             </div>
-            <div className="bg-surface-900/50 border border-surface-800 backdrop-blur-xl rounded-3xl p-6 hover:bg-surface-800 transition-colors">
-              <p className="text-3xl font-black text-primary-400 heading-font mb-1">200+</p>
-              <p className="text-xs text-surface-400 font-bold uppercase tracking-wider">NGOs</p>
+            <div className="w-px h-12 bg-zinc-800/50" />
+            <div>
+              <p className="text-3xl font-semibold text-white tracking-tight">200+</p>
+              <p className="text-xs text-zinc-500 font-bold mt-1 uppercase tracking-wider">Active NGOs</p>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Right: Refined Form */}
-      <div className="flex-1 flex items-center justify-center p-6 lg:p-16 relative z-10">
-        <div className="w-full max-w-[440px] animate-slide-left glass-panel p-8 lg:p-12 rounded-[2.5rem]">
-          {/* Mobile logo */}
-          <div className="lg:hidden text-center mb-10">
-            <div className="w-16 h-16 rounded-3xl bg-gradient-to-br from-primary-400 to-primary-600 flex items-center justify-center text-3xl font-black text-surface-950 mx-auto mb-4 shadow-lg">
-              R
+      {/* Right Panel: Soft, Muted Form Area */}
+      <div className="flex-1 flex flex-col justify-center px-8 sm:px-16 lg:px-24 bg-zinc-50">
+        <div className="w-full max-w-[420px] mx-auto animate-in fade-in slide-in-from-bottom-4 duration-700">
+          
+          {/* Mobile Logo */}
+          <div className="lg:hidden flex items-center gap-3 mb-10">
+            <div className="w-10 h-10 bg-emerald-500 rounded-lg flex items-center justify-center shadow-sm">
+              <span className="text-zinc-950 font-bold text-xl tracking-tighter">Z</span>
             </div>
-            <h1 className="text-3xl font-black heading-font text-surface-900">ResQFood</h1>
+            <span className="text-zinc-900 text-2xl font-semibold tracking-tight">ZeroWaste</span>
           </div>
 
-          <div className="mb-10 lg:mb-12">
-            <h2 className="text-4xl font-black text-surface-950 mb-3 heading-font tracking-tight">Welcome back.</h2>
-            <p className="text-surface-500 font-medium text-lg">Sign in to your dashboard to continue.</p>
+          <div className="mb-8">
+            <h2 className="text-3xl font-semibold text-zinc-900 tracking-tight">Welcome back</h2>
+            <p className="text-zinc-500 mt-2 text-base">Sign in to your dashboard to continue.</p>
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-6">
-            <Input
-              label="Email Address"
-              type="email"
-              placeholder="you@example.com"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              icon={<HiMail />}
-              required
-            />
+          <form onSubmit={handleSubmit} className="space-y-5">
+            
+            {/* Custom Input: Email */}
+            <div className="space-y-1.5">
+              <label className="text-sm font-medium text-zinc-700 block">Email Address</label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
+                  <HiMail className="text-zinc-400 w-5 h-5" />
+                </div>
+                <input
+                  type="email"
+                  required
+                  placeholder="name@organization.com"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="w-full pl-10 pr-4 py-2.5 bg-white border border-zinc-200 rounded-lg text-sm text-zinc-900 placeholder-zinc-400 focus:bg-white focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all outline-none shadow-sm"
+                />
+              </div>
+            </div>
 
-            <Input
-              label="Password"
-              type="password"
-              placeholder="••••••••"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              icon={<HiLockClosed />}
-              required
-            />
+            {/* Custom Input: Password */}
+            <div className="space-y-1.5">
+              <label className="text-sm font-medium text-zinc-700 block">Password</label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
+                  <HiLockClosed className="text-zinc-400 w-5 h-5" />
+                </div>
+                <input
+                  type="password"
+                  required
+                  placeholder="••••••••"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="w-full pl-10 pr-4 py-2.5 bg-white border border-zinc-200 rounded-lg text-sm text-zinc-900 placeholder-zinc-400 focus:bg-white focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all outline-none shadow-sm"
+                />
+              </div>
+            </div>
 
-            <Button
-              type="submit"
-              className="w-full mt-4"
-              size="xl"
-              isLoading={isLoading}
-            >
-              Sign In to Dashboard
-            </Button>
+            {/* Dark Sleek Button */}
+            <div className="pt-3">
+              <button
+                type="submit"
+                disabled={isLoading}
+                className="w-full bg-zinc-900 hover:bg-zinc-800 disabled:bg-zinc-800/50 text-white font-medium py-2.5 rounded-lg transition-all shadow-md flex items-center justify-center gap-2 group border-none"
+              >
+                {isLoading ? 'Signing in...' : 'Sign In to Dashboard'}
+                {!isLoading && <HiArrowRight className="group-hover:translate-x-1 transition-transform" />}
+              </button>
+            </div>
           </form>
 
-          <p className="text-center font-semibold text-surface-600 mt-10">
+          <p className="text-center text-sm text-zinc-500 mt-8">
             Don't have an account?{' '}
-            <Link to="/register" className="text-primary-600 font-bold hover:text-primary-700 underline decoration-2 underline-offset-4 decoration-primary-500/30 hover:decoration-primary-500 transition-all">
+            <Link to="/register" className="text-zinc-900 font-medium hover:text-emerald-600 transition-colors underline decoration-zinc-300 underline-offset-4 hover:decoration-emerald-500">
               Create one
             </Link>
           </p>
 
-          {/* Demo accounts - Restyled */}
-          <div className="mt-10 p-6 bg-surface-950 text-white rounded-3xl shadow-xl">
-            <p className="text-sm font-bold text-primary-400 mb-4 heading-font flex items-center gap-2">
-              <span className="w-2 h-2 rounded-full bg-primary-500 animate-pulse" /> Test Credentials
-            </p>
-            <div className="grid grid-cols-2 gap-y-4 gap-x-2 text-xs font-mono">
-              <div className="bg-surface-900 p-3 rounded-xl">
-                <span className="text-surface-400 block mb-1">Admin</span>
-                <span className="text-primary-300">admin@</span>
-              </div>
-              <div className="bg-surface-900 p-3 rounded-xl">
-                <span className="text-surface-400 block mb-1">Donor</span>
-                <span className="text-primary-300">donor@</span>
-              </div>
-              <div className="bg-surface-900 p-3 rounded-xl">
-                <span className="text-surface-400 block mb-1">NGO</span>
-                <span className="text-primary-300">ngo@</span>
-              </div>
-              <div className="bg-surface-900 p-3 rounded-xl">
-                <span className="text-surface-400 block mb-1">Volunteer</span>
-                <span className="text-primary-300">volunteer@</span>
-              </div>
+          {/* Clean Demo Credentials Box */}
+          <div className="mt-10 border border-zinc-200 bg-white/50 rounded-xl p-5 shadow-sm">
+            <div className="flex items-center gap-2 mb-4">
+              <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+              <span className="text-xs font-semibold text-zinc-700 uppercase tracking-wider">Test Credentials</span>
             </div>
-            <p className="text-center text-[11px] text-surface-500 font-medium mt-4 pt-4 border-t border-surface-800">
-              Suffix: <span className="text-white">resqfood.com</span> • Pass: <span className="text-white">password123</span>
-            </p>
+            
+            <div className="grid grid-cols-2 gap-3 text-sm">
+              {[
+                { role: 'Admin', email: 'admin' },
+                { role: 'Donor', email: 'donor' },
+                { role: 'NGO', email: 'ngo' },
+                { role: 'Volunteer', email: 'volunteer' },
+              ].map((cred) => (
+                <div 
+                  key={cred.role} 
+                  className="flex flex-col p-3 rounded-lg border border-zinc-200 bg-white shadow-sm cursor-pointer hover:border-emerald-500 hover:shadow-md transition-all group" 
+                  onClick={() => {
+                    setEmail(`${cred.email}@resqfood.com`);
+                    setPassword('password123');
+                    toast.success(`${cred.role} credentials loaded`);
+                  }}
+                >
+                  <span className="text-xs font-semibold text-zinc-600 mb-0.5 group-hover:text-emerald-600 transition-colors">{cred.role}</span>
+                  <span className="font-mono text-zinc-500 text-[11px] truncate">{cred.email}@...</span>
+                </div>
+              ))}
+            </div>
+            
+            <div className="mt-4 pt-4 border-t border-zinc-200 flex justify-between items-center text-[11px] text-zinc-500 font-mono">
+              <span>Domain: @resqfood.com</span>
+              <span>Pass: password123</span>
+            </div>
           </div>
+
         </div>
       </div>
     </div>

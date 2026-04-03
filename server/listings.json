@@ -1,0 +1,33 @@
+[
+  {
+    "_id": "69d017c9e84b67871cb34854",
+    "donorId": "69d0100987e50261b0de7d4d",
+    "title": "Potato",
+    "description": "This is a vegetable",
+    "quantity": 34,
+    "unit": "kg",
+    "category": "cooked_meals",
+    "condition": "fresh",
+    "photos": [
+      {
+        "url": "https://res.cloudinary.com/dpdhszkuq/image/upload/v1775245253/resqfood/listings/bdlsfm2g7mkhpfby9wnq.png",
+        "publicId": "resqfood/listings/bdlsfm2g7mkhpfby9wnq",
+        "_id": "69d017c9e84b67871cb34855"
+      }
+    ],
+    "geo": {
+      "type": "Point",
+      "coordinates": [
+        0,
+        0
+      ]
+    },
+    "address": "IIIT DMJ",
+    "expiryAt": "2026-04-03T20:10:00.000Z",
+    "readyAt": "2026-04-16T23:44:00.000Z",
+    "status": "expired",
+    "createdAt": "2026-04-03T19:40:57.282Z",
+    "updatedAt": "2026-04-03T20:10:19.282Z",
+    "__v": 0
+  }
+]

@@ -7,6 +7,11 @@ const createListing = async (req, res, next) => {
   try {
     const { title, description, quantity, unit, category, condition, expiryAt, readyAt, address, lat, lng } = req.body;
 
+    // Basic validation before expensive uploads
+    if (!title || !quantity || !address || !expiryAt) {
+      return res.status(400).json({ success: false, error: 'Please provide all required fields including expiryAt.' });
+    }
+
     // Upload photos to cloudinary
     let photos = [];
     if (req.files && req.files.length > 0) {
@@ -18,7 +23,7 @@ const createListing = async (req, res, next) => {
         photos = results.map((r) => ({ url: r.secure_url, publicId: r.public_id }));
       } catch (uploadErr) {
         console.error('Cloudinary upload failed:', uploadErr.message);
-        // Continue without photos if cloudinary isn't configured
+        return res.status(400).json({ success: false, error: 'Failed to upload images. Please try again.' });
       }
     }
 
