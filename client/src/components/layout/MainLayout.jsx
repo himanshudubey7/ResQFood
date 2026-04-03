@@ -9,7 +9,7 @@ const MainLayout = () => {
   useSocket();
 
   return (
-    <div className="flex h-screen w-full bg-zinc-50 font-sans overflow-hidden selection:bg-emerald-100 selection:text-emerald-900">
+    <div className="flex h-screen w-full bg-surface-50 font-sans overflow-hidden selection:bg-primary-100 selection:text-primary-900">
       
       <Sidebar isOpen={sidebarOpen} setIsOpen={setSidebarOpen} />
 
@@ -18,8 +18,8 @@ const MainLayout = () => {
         <TopBar onMenuClick={() => setSidebarOpen(true)} />
 
         {/* Scrollable Page Content */}
-        <main className="flex-1 overflow-y-auto px-4 pb-6 pt-4 md:px-6 md:pb-8 md:pt-5 lg:px-8 lg:pb-10 lg:pt-6 scroll-smooth">
-          <div className="mx-auto w-full max-w-315">
+        <main className="flex-1 overflow-y-auto px-6 pb-12 pt-8 md:px-10 md:pb-16 md:pt-10 lg:px-12 lg:pb-20 lg:pt-12 scroll-smooth">
+          <div className="mx-auto w-full max-w-screen-2xl">
             <Outlet />
           </div>
         </main>

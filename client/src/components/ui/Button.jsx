@@ -10,10 +10,10 @@ const variants = {
 };
 
 const sizes = {
-  sm: 'px-4 py-2 text-xs rounded-xl',
-  md: 'px-6 py-3 text-sm rounded-2xl',
-  lg: 'px-8 py-4 text-base rounded-2xl',
-  xl: 'px-10 py-5 text-lg rounded-3xl',
+  sm: 'px-5 py-2.5 text-xs rounded-xl tracking-wide',
+  md: 'px-7 py-3.5 text-sm rounded-2xl tracking-wide',
+  lg: 'px-9 py-4 text-base rounded-[1.25rem] tracking-wide',
+  xl: 'px-12 py-5 text-lg rounded-[1.5rem] tracking-wide',
 };
 
 const Button = forwardRef(({

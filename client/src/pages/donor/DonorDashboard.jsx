@@ -29,26 +29,26 @@ const DonorDashboard = () => {
   return (
     <div className="space-y-10 animate-fade-in">
       {/* Header Section */}
-      <div className="flex flex-col xl:flex-row xl:items-end justify-between gap-7 md:gap-8 glass-panel p-6 md:p-8 lg:p-10 rounded-[2.5rem] relative overflow-hidden">
+      <div className="flex flex-col xl:flex-row xl:items-end justify-between gap-8 md:gap-12 glass-panel p-8 md:p-10 lg:p-12 rounded-[3.5rem] relative overflow-hidden">
         {/* Soft decorative background glows */}
-        <div className="absolute -top-32 -right-32 w-96 h-96 bg-primary-400/20 rounded-full blur-[80px] pointer-events-none" />
-        <div className="absolute -bottom-32 -left-32 w-96 h-96 bg-accent-400/20 rounded-full blur-[80px] pointer-events-none" />
+        <div className="absolute -top-32 -right-32 w-[32rem] h-[32rem] bg-primary-400/20 rounded-full blur-[100px] pointer-events-none" />
+        <div className="absolute -bottom-32 -left-32 w-[32rem] h-[32rem] bg-accent-400/20 rounded-full blur-[100px] pointer-events-none" />
         
-        <div className="relative z-10">
-          <Badge color="primary" className="mb-3">Donor Portal</Badge>
-          <h1 className="text-3xl md:text-4xl lg:text-5xl font-black text-surface-950 heading-font tracking-tight mb-2">
+        <div className="relative z-10 max-w-3xl">
+          <Badge color="primary" className="mb-6">Donor Portal</Badge>
+          <h1 className="text-4xl md:text-5xl lg:text-6xl font-black text-surface-950 heading-font tracking-tight mb-4">
             Welcome back,
             <br className="hidden md:block" />
-            <span className="gradient-text">{user?.organizationName || user?.name}</span>
+            <span className="gradient-text line-clamp-1 py-1">{user?.organizationName || user?.name}</span>
           </h1>
-          <p className="text-surface-600 text-base md:text-lg font-medium max-w-2xl mt-3 leading-relaxed">
+          <p className="text-surface-600 text-lg md:text-xl font-bold max-w-2xl mt-4 leading-relaxed">
             Ready to make an impact today? Your surplus food can become someone's next meal within minutes.
           </p>
         </div>
         
-        <div className="relative z-10">
+        <div className="relative z-10 shrink-0">
           <Link to="/donor/create">
-            <Button size="lg" icon={<HiPlus />} className="shadow-[0_10px_30px_-10px_rgba(0,230,118,0.6)]">
+            <Button size="xl" icon={<HiPlus />} className="shadow-[0_12px_40px_-12px_rgba(0,230,118,0.7)] w-full xl:w-auto">
               List Surplus Food
             </Button>
           </Link>
@@ -56,7 +56,7 @@ const DonorDashboard = () => {
       </div>
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-5 md:gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-6 md:gap-8">
         <StatCard
           title="Total Donations"
           value={stats.total}
@@ -86,15 +86,15 @@ const DonorDashboard = () => {
       </div>
 
       {/* Recent Activity */}
-      <div className="space-y-4">
-        <div className="flex items-center justify-between gap-4 px-1">
-          <h2 className="text-2xl font-bold heading-font text-surface-900">Recent Listings</h2>
-          <Link to="/donor/listings" className="text-primary-600 font-bold hover:text-primary-700 hover:underline underline-offset-4 decoration-2 decoration-primary-500/30">
+      <div className="space-y-6 pt-4">
+        <div className="flex items-center justify-between gap-6 px-2">
+          <h2 className="text-3xl font-black heading-font text-surface-950 tracking-tight">Recent Listings</h2>
+          <Link to="/donor/listings" className="text-primary-600 font-extrabold hover:text-primary-700 hover:underline underline-offset-8 decoration-4 decoration-primary-500/40 text-lg transition-all">
             View All
           </Link>
         </div>
 
-        <Card glass padding="p-3 md:p-4 lg:p-5">
+        <Card glass padding="p-2 sm:p-4 md:p-6 lg:p-8">
           {listings.length === 0 ? (
             <EmptyState
               icon={HiPlus}
