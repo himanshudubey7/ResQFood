@@ -2,6 +2,9 @@ const FoodListing = require('../models/FoodListing');
 const { uploadToCloudinary } = require('../config/cloudinary');
 const { generateListingChatResponse } = require('../services/gemini.service');
 const { generateAudioBuffer } = require('../services/elevenlabs.service');
+const { extractDonationData } = require('../services/intake.service');
+
+const intakeSessions = new Map();
 
 // @desc    Create food listing
 // @route   POST /api/listings
@@ -274,4 +277,87 @@ const askListingChatbot = async (req, res, next) => {
   }
 };
 
-module.exports = { createListing, getListings, getListingById, updateListing, deleteListing, askListingChatbot };
+// @desc    Donor voice intake assistant for create listing
+// @route   POST /api/listings/intake/assist
+const assistDonorIntake = async (req, res, next) => {
+  try {
+    const { message, preferredLanguage = 'English', includeAudio = true, currentForm = {} } = req.body;
+
+    if (!message || typeof message !== 'string' || !message.trim()) {
+      return res.status(400).json({ success: false, message: 'Message is required' });
+    }
+
+    const sessionKey = String(req.user._id);
+    const previous = intakeSessions.get(sessionKey) || {};
+    const base = { ...previous, ...(currentForm || {}) };
+
+    const aiState = await extractDonationData({
+      userMessage: message.trim(),
+      currentData: base,
+      preferredLanguage,
+    });
+
+    intakeSessions.set(sessionKey, aiState.extractedData || {});
+
+    let audioBase64 = null;
+    if (includeAudio) {
+      try {
+        const audioBuffer = await generateAudioBuffer(aiState.aiReply);
+        if (audioBuffer) {
+          audioBase64 = audioBuffer.toString('base64');
+        }
+      } catch (audioError) {
+        console.log('Intake audio generation skipped:', audioError.message);
+      }
+    }
+
+    const expiryHours = Number(aiState.extractedData?.expiryHours);
+    let expiryAt = undefined;
+    if (Number.isFinite(expiryHours)) {
+      const date = new Date(Date.now() + expiryHours * 60 * 60 * 1000);
+      date.setMinutes(date.getMinutes() - date.getTimezoneOffset());
+      expiryAt = date.toISOString().slice(0, 16);
+    }
+
+    const formPatch = {
+      title: aiState.extractedData?.title,
+      description: aiState.extractedData?.description,
+      quantity: aiState.extractedData?.quantity,
+      unit: aiState.extractedData?.unit,
+      category: aiState.extractedData?.category,
+      condition: aiState.extractedData?.condition,
+      address: aiState.extractedData?.address,
+      expiryAt,
+    };
+
+    Object.keys(formPatch).forEach((key) => {
+      if (formPatch[key] === undefined || formPatch[key] === null || formPatch[key] === '') {
+        delete formPatch[key];
+      }
+    });
+
+    res.json({
+      success: true,
+      data: {
+        aiReply: aiState.aiReply,
+        isComplete: aiState.isComplete,
+        extractedData: aiState.extractedData,
+        formPatch,
+        audioBase64,
+        audioMimeType: audioBase64 ? 'audio/mpeg' : null,
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+module.exports = {
+  createListing,
+  getListings,
+  getListingById,
+  updateListing,
+  deleteListing,
+  askListingChatbot,
+  assistDonorIntake,
+};

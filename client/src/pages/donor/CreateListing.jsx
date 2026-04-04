@@ -5,6 +5,7 @@ import Button from '../../components/ui/Button';
 import Input from '../../components/ui/Input';
 import Card from '../../components/ui/Card';
 import { HiPhotograph, HiX } from 'react-icons/hi';
+import DonorIntakeAssistant from '../../components/chat/DonorIntakeAssistant';
 
 const categories = [
   { value: 'cooked_meals', label: '🍲 Cooked Meals' },
@@ -53,6 +54,12 @@ const CreateListing = () => {
   });
 
   const updateForm = (field, value) => setForm((prev) => ({ ...prev, [field]: value }));
+  const applyFormPatch = (patch) => {
+    setForm((prev) => ({
+      ...prev,
+      ...Object.fromEntries(Object.entries(patch || {}).filter(([, v]) => v !== undefined && v !== null && v !== '')),
+    }));
+  };
 
   const handlePhotoChange = (e) => {
     const files = Array.from(e.target.files).slice(0, 5);
@@ -252,6 +259,7 @@ const CreateListing = () => {
           </div>
         </Card>
       </form>
+      <DonorIntakeAssistant currentForm={form} onFormPatch={applyFormPatch} />
     </div>
   );
 };

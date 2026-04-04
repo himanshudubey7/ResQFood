@@ -6,6 +6,7 @@ const {
 	updateListing,
 	deleteListing,
 	askListingChatbot,
+	assistDonorIntake,
 } = require('../controllers/listing.controller');
 const { claimListing } = require('../controllers/claim.controller');
 const { protect } = require('../middleware/auth.middleware');
@@ -25,5 +26,6 @@ router.delete('/:id', authorize('donor', 'admin'), deleteListing);
 // Claim route
 router.post('/:id/claim', authorize('ngo'), claimListing);
 router.post('/:id/chatbot', authorize('ngo'), askListingChatbot);
+router.post('/intake/assist', authorize('donor', 'admin'), assistDonorIntake);
 
 module.exports = router;
