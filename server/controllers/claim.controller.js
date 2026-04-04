@@ -2,8 +2,10 @@ const FoodListing = require('../models/FoodListing');
 const Claim = require('../models/Claim');
 const Notification = require('../models/Notification');
 const { calculateFairnessScore } = require('../services/fairness.service');
+const { sendMail } = require('../services/mail.service');
+const crypto = require('crypto');
 
-// @desc    Claim a listing (atomic - first valid claim wins)
+// @desc    Claim a listing (supports partial quantity with verification workflow)
 // @route   POST /api/listings/:id/claim
 const claimListing = async (req, res, next) => {
   try {
@@ -25,7 +27,7 @@ const claimListing = async (req, res, next) => {
       });
     }
 
-    // Atomic update for partial claims: decrement quantity only when enough stock remains.
+    // Reserve requested quantity only if listing still has enough available.
     const listing = await FoodListing.findOneAndUpdate(
       {
         _id: listingId,
@@ -47,61 +49,146 @@ const claimListing = async (req, res, next) => {
       });
     }
 
-    if (listing.quantity <= 0) {
+    const fullyClaimed = listing.quantity <= 0;
+    if (fullyClaimed) {
       listing.status = 'claimed';
       listing.claimedBy = ngoId;
       listing.claimedAt = new Date();
+      await listing.save();
     }
 
-    await listing.save();
-
-    // Calculate fairness score
     const priorityScore = await calculateFairnessScore(ngoId, listing);
 
-    // Create claim record
-    const claim = await Claim.create({
-      listingId: listing._id,
-      ngoId,
-      claimedQuantity: requestedQty,
-      status: 'approved',
-      priorityScore,
-      notes: req.body.notes || '',
-    });
+    const now = new Date();
+    const verificationToken = crypto.randomBytes(24).toString('hex');
+    const verificationEmailAt = new Date(now.getTime() + 30 * 1000);
+    const verificationDeadline = new Date(now.getTime() + 60 * 1000);
 
-    // Create notification for donor
+    // Upsert allows re-claim attempts by same NGO for same listing after timeout.
+    const claim = await Claim.findOneAndUpdate(
+      { listingId: listing._id, ngoId },
+      {
+        claimedQuantity: requestedQty,
+        status: 'pending',
+        priorityScore,
+        notes: req.body.notes || '',
+        verificationToken,
+        verificationEmailAt,
+        verificationEmailSent: false,
+        verificationDeadline,
+        isPickupConfirmed: false,
+        confirmedAt: null,
+      },
+      {
+        new: true,
+        upsert: true,
+        setDefaultsOnInsert: true,
+      }
+    );
+
+    const backendBaseUrl = process.env.BACKEND_BASE_URL || 'http://localhost:5000';
+    const verifyUrl = `${backendBaseUrl.replace(/\/$/, '')}/api/claims/verify/${verificationToken}`;
+
+    try {
+      await sendMail({
+        to: req.user.email,
+        subject: `Claim received for ${listing.title}`,
+        html: `
+          <p>Hello ${req.user.name},</p>
+          <p>You claimed <strong>${requestedQty} ${listing.unit}</strong> of <strong>${listing.title}</strong>.</p>
+          <p>Pickup address: ${listing.address || 'N/A'}</p>
+          <p>You will receive a verification mail in 30 seconds.</p>
+        `,
+        text: `You claimed ${requestedQty} ${listing.unit} of ${listing.title}. Pickup: ${listing.address || 'N/A'}. Verification mail will follow in 30 seconds.`,
+      });
+    } catch (mailErr) {
+      console.error('Immediate claim mail failed:', mailErr.message);
+    }
+
     await Notification.create({
       userId: listing.donorId._id,
       type: 'listing_claimed',
-      title: 'Listing Claimed',
-      message: `Your listing "${listing.title}" has been claimed by ${req.user.name}`,
+      title: fullyClaimed ? 'Listing Fully Claimed' : 'Partial Claim Received',
+      message: `${req.user.name} claimed ${requestedQty} ${listing.unit} from "${listing.title}"`,
       data: { listingId: listing._id, claimId: claim._id },
     });
 
-    // Emit real-time events
     const io = req.app.get('io');
     if (io) {
-      // Notify donor
       io.to(`user_${listing.donorId._id}`).emit('listing:claimed', {
         listing,
         claimedQuantity: requestedQty,
         claimedBy: { name: req.user.name, email: req.user.email },
       });
 
-      // Notify NGOs to refresh listing quantity or remove when exhausted.
       io.to('role_ngo').emit('listing:updated', listing);
 
-      // Send notification
       io.to(`user_${listing.donorId._id}`).emit('notification:new', {
         type: 'listing_claimed',
-        title: 'Listing Claimed',
-        message: `Your listing "${listing.title}" has been claimed`,
+        title: fullyClaimed ? 'Listing Fully Claimed' : 'Partial Claim Received',
+        message: `${req.user.name} claimed ${requestedQty} ${listing.unit} from "${listing.title}"`,
       });
     }
 
     res.json({
       success: true,
-      data: { listing, claim, remainingQuantity: listing.quantity },
+      data: {
+        listing,
+        claim,
+        remainingQuantity: listing.quantity,
+        verification: {
+          verificationEmailAt,
+          verificationDeadline,
+          verifyUrl,
+        },
+      },
     });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// @desc    Verify claim by emailed token
+// @route   GET /api/claims/verify/:token
+const verifyClaimByToken = async (req, res, next) => {
+  try {
+    const clientUrl = process.env.CLIENT_URL || 'http://localhost:5173';
+    const { token } = req.params;
+    const claim = await Claim.findOne({ verificationToken: token }).populate('listingId ngoId');
+
+    if (!claim) {
+      return res.redirect(`${clientUrl}/ngo/claims?verify=invalid`);
+    }
+
+    if (claim.status === 'approved' && claim.isPickupConfirmed) {
+      return res.redirect(`${clientUrl}/ngo/claims?verify=already-confirmed`);
+    }
+
+    if (claim.status !== 'pending') {
+      return res.redirect(`${clientUrl}/ngo/claims?verify=${encodeURIComponent(claim.status)}`);
+    }
+
+    if (claim.verificationDeadline && claim.verificationDeadline.getTime() < Date.now()) {
+      return res.redirect(`${clientUrl}/ngo/claims?verify=expired`);
+    }
+
+    claim.status = 'approved';
+    claim.isPickupConfirmed = true;
+    claim.confirmedAt = new Date();
+    await claim.save();
+
+    const donorId = claim.listingId?.donorId;
+    if (donorId) {
+      await Notification.create({
+        userId: donorId,
+        type: 'claim_confirmed',
+        title: 'NGO Confirmed Pickup',
+        message: `${claim.ngoId?.name || 'NGO'} confirmed pickup for "${claim.listingId?.title || 'listing'}"`,
+        data: { listingId: claim.listingId?._id, claimId: claim._id },
+      });
+    }
+
+    res.redirect(`${clientUrl}/ngo/claims?verify=success`);
   } catch (error) {
     next(error);
   }
@@ -113,7 +200,12 @@ const getMyClaims = async (req, res, next) => {
   try {
     const { status, page = 1, limit = 20 } = req.query;
     const query = { ngoId: req.user._id };
-    if (status) query.status = status;
+
+    if (status) {
+      query.status = status;
+    } else {
+      query.status = { $in: ['pending', 'approved'] };
+    }
 
     const total = await Claim.countDocuments(query);
     const claims = await Claim.find(query)
@@ -253,4 +345,11 @@ const getClaimsForListing = async (req, res, next) => {
   }
 };
 
-module.exports = { claimListing, getMyClaims, getAllClaims, getClaimsForListing, getReceivedClaims };
+module.exports = {
+  claimListing,
+  verifyClaimByToken,
+  getMyClaims,
+  getAllClaims,
+  getClaimsForListing,
+  getReceivedClaims,
+};

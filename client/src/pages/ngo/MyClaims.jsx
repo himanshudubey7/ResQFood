@@ -60,8 +60,8 @@ const MyClaims = () => {
                 </div>
 
                 <div className="flex items-center gap-3">
-                  <Badge className={getStatusColor(listing.status)}>
-                    {getStatusLabel(listing.status)}
+                  <Badge className={getStatusColor(claim.status)}>
+                    {getStatusLabel(claim.status)}
                   </Badge>
                   {listing.assignedVolunteer && (
                     <Badge variant="purple" size="xs">
@@ -79,7 +79,7 @@ const MyClaims = () => {
           title="No claims yet"
           description="Visit the Live Feed to claim available food listings"
           action="Go to Live Feed"
-          onAction={() => window.location.href = '/ngo/feed'}
+          onAction={() => window.location.href = '/ngo/live'}
         />
       )}
 

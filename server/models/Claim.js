@@ -20,7 +20,29 @@ const claimSchema = new mongoose.Schema(
     status: {
       type: String,
       enum: ['pending', 'approved', 'rejected', 'cancelled'],
-      default: 'approved',
+      default: 'pending',
+    },
+    verificationToken: {
+      type: String,
+      default: '',
+    },
+    verificationEmailAt: {
+      type: Date,
+    },
+    verificationEmailSent: {
+      type: Boolean,
+      default: false,
+    },
+    verificationDeadline: {
+      type: Date,
+    },
+    isPickupConfirmed: {
+      type: Boolean,
+      default: false,
+    },
+    confirmedAt: {
+      type: Date,
+      default: null,
     },
     priorityScore: {
       type: Number,
@@ -36,7 +58,9 @@ const claimSchema = new mongoose.Schema(
   }
 );
 
-claimSchema.index({ listingId: 1, ngoId: 1 }, { unique: true });
+claimSchema.index({ listingId: 1, ngoId: 1 });
 claimSchema.index({ ngoId: 1, status: 1 });
+claimSchema.index({ verificationDeadline: 1, status: 1 });
+claimSchema.index({ verificationEmailAt: 1, verificationEmailSent: 1, status: 1 });
 
 module.exports = mongoose.model('Claim', claimSchema);

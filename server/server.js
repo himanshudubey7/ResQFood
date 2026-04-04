@@ -5,6 +5,7 @@ const app = require('./app');
 const connectDB = require('./config/db');
 const { initializeSocket } = require('./sockets/index');
 const { startExpiryJob } = require('./jobs/expiry.job');
+const { startClaimVerificationJob } = require('./jobs/claimVerification.job');
 const logger = require('./utils/logger');
 
 const PORT = process.env.PORT || 5000;
@@ -40,6 +41,7 @@ const startServer = async () => {
 
     // Start background jobs
     startExpiryJob(io, 60000); // Check every minute
+    startClaimVerificationJob(io, 5000); // Verification checks every 5s
 
   } catch (error) {
     logger.error('Failed to start server:', error.message);
