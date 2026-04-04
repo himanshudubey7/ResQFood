@@ -1,5 +1,5 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { HiHome, HiPlusCircle, HiClipboardList, HiUsers, HiLightningBolt, HiLogout, HiX, HiShieldCheck, HiScale, HiExclamationCircle } from 'react-icons/hi';
+import { HiHome, HiPlusCircle, HiClipboardList, HiUsers, HiLightningBolt, HiLogout, HiX, HiShieldCheck, HiScale, HiExclamationCircle, HiUserCircle } from 'react-icons/hi';
 import useAuthStore from '../../store/authStore';
 
 const roleNavItems = {
@@ -8,11 +8,13 @@ const roleNavItems = {
     { path: '/donor/create', icon: HiPlusCircle, label: 'Create Listing' },
     { path: '/donor/listings', icon: HiClipboardList, label: 'My Listings' },
     { path: '/donor/claims', icon: HiUsers, label: 'Claimed Orders' },
+    { path: '/donor/profile', icon: HiUserCircle, label: 'Profile' },
   ],
   ngo: [
     { path: '/ngo', icon: HiHome, label: 'Overview' },
     { path: '/ngo/live', icon: HiLightningBolt, label: 'Live Feed' },
     { path: '/ngo/claims', icon: HiClipboardList, label: 'My Claims' },
+    { path: '/ngo/profile', icon: HiUserCircle, label: 'Profile' },
   ],
   admin: [
     { path: '/admin', icon: HiHome, label: 'Live Monitoring' },

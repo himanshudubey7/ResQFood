@@ -17,11 +17,13 @@ import CreateListing from './pages/donor/CreateListing';
 import MyListings from './pages/donor/MyListings';
 import ListingDetail from './pages/donor/ListingDetail';
 import ReceivedClaims from './pages/donor/ReceivedClaims';
+import DonorProfile from './pages/donor/DonorProfile';
 
 // NGO Pages
 import NgoDashboard from './pages/ngo/NgoDashboard';
 import LiveFeed from './pages/ngo/LiveFeed';
 import MyClaims from './pages/ngo/MyClaims';
+import NgoProfile from './pages/ngo/NgoProfile';
 
 // Admin Pages
 import AdminDashboard from './pages/admin/AdminDashboard';
@@ -81,6 +83,7 @@ const App = () => {
             <Route path="/donor/create" element={<ProtectedRoute roles={['donor', 'admin']}><CreateListing /></ProtectedRoute>} />
             <Route path="/donor/listings" element={<ProtectedRoute roles={['donor', 'admin']}><MyListings /></ProtectedRoute>} />
             <Route path="/donor/claims" element={<ProtectedRoute roles={['donor', 'admin']}><ReceivedClaims /></ProtectedRoute>} />
+            <Route path="/donor/profile" element={<ProtectedRoute roles={['donor', 'admin']}><DonorProfile /></ProtectedRoute>} />
             <Route path="/donor/listings/:id" element={<ProtectedRoute roles={['donor', 'admin']}><ListingDetail /></ProtectedRoute>} />
 
             {/* NGO Routes */}
@@ -88,6 +91,7 @@ const App = () => {
             <Route path="/ngo/live" element={<ProtectedRoute roles={['ngo', 'admin']}><LiveFeed /></ProtectedRoute>} />
             <Route path="/ngo/live/:id" element={<ProtectedRoute roles={['ngo', 'admin']}><ListingDetail /></ProtectedRoute>} /> {/* Reusing detail page */}
             <Route path="/ngo/claims" element={<ProtectedRoute roles={['ngo', 'admin']}><MyClaims /></ProtectedRoute>} />
+            <Route path="/ngo/profile" element={<ProtectedRoute roles={['ngo', 'admin']}><NgoProfile /></ProtectedRoute>} />
 
 
             {/* Admin Routes */}

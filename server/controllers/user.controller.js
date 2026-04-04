@@ -1,5 +1,6 @@
 const User = require('../models/User');
 const Organization = require('../models/Organization');
+const { uploadToCloudinary } = require('../config/cloudinary');
 
 // @desc    Get all users (admin)
 // @route   GET /api/users
@@ -78,23 +79,72 @@ const verifyUser = async (req, res, next) => {
 // @route   PATCH /api/users/profile
 const updateProfile = async (req, res, next) => {
   try {
-    const { name, phone, location } = req.body;
+    const {
+      name,
+      phone,
+      location,
+      orgName,
+      orgType,
+      orgAddress,
+      orgDescription,
+      orgContactPhone,
+      orgContactEmail,
+      orgCapacity,
+      orgNeedLevel,
+    } = req.body;
     const updates = {};
 
     if (name) updates.name = name;
     if (phone) updates.phone = phone;
+
+    if (req.file?.buffer) {
+      const uploaded = await uploadToCloudinary(req.file.buffer, 'resqfood/avatars');
+      updates.avatar = uploaded.secure_url;
+    }
+
     if (location) {
+      let parsedLocation = location;
+      if (typeof location === 'string') {
+        try {
+          parsedLocation = JSON.parse(location);
+        } catch {
+          parsedLocation = { address: location };
+        }
+      }
+
       updates.location = {
         type: 'Point',
-        coordinates: [location.lng || 0, location.lat || 0],
-        address: location.address || '',
+        coordinates: [Number(parsedLocation?.lng) || 0, Number(parsedLocation?.lat) || 0],
+        address: parsedLocation?.address || '',
       };
     }
 
-    const user = await User.findByIdAndUpdate(req.user._id, updates, {
+    let user = await User.findByIdAndUpdate(req.user._id, updates, {
       new: true,
       runValidators: true,
     }).populate('organizationId');
+
+    if (user?.organizationId && (user.role === 'donor' || user.role === 'ngo')) {
+      const orgUpdates = {};
+
+      if (orgName) orgUpdates.name = orgName;
+      if (orgType) orgUpdates.type = orgType;
+      if (orgAddress) orgUpdates.address = orgAddress;
+      if (orgDescription !== undefined) orgUpdates.description = orgDescription;
+      if (orgContactPhone) orgUpdates.contactPhone = orgContactPhone;
+      if (orgContactEmail) orgUpdates.contactEmail = orgContactEmail;
+      if (orgCapacity !== undefined && orgCapacity !== '') orgUpdates.capacity = Number(orgCapacity);
+      if (orgNeedLevel !== undefined && orgNeedLevel !== '') orgUpdates.needLevel = Number(orgNeedLevel);
+
+      if (Object.keys(orgUpdates).length > 0) {
+        await Organization.findByIdAndUpdate(user.organizationId._id || user.organizationId, orgUpdates, {
+          new: true,
+          runValidators: true,
+        });
+      }
+
+      user = await User.findById(req.user._id).populate('organizationId');
+    }
 
     res.json({ success: true, data: user });
   } catch (error) {

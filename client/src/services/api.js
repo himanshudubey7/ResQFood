@@ -85,7 +85,8 @@ export const usersAPI = {
   getAll: (params) => api.get('/users', { params }),
   getStats: () => api.get('/users/stats'),
   verify: (id) => api.patch(`/users/${id}/verify`),
-  updateProfile: (data) => api.patch('/users/profile', data),
+  updateProfile: (data, isMultipart = false) =>
+    api.patch('/users/profile', data, isMultipart ? { headers: { 'Content-Type': 'multipart/form-data' } } : undefined),
 };
 
 // ===== Analytics API =====
