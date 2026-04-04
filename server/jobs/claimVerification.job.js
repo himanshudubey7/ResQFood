@@ -19,7 +19,7 @@ const sendVerificationEmails = async () => {
     const listing = claim.listingId;
     if (!ngo || !listing) continue;
 
-    const backendBaseUrl = process.env.BACKEND_BASE_URL || 'http://localhost:5000';
+    const backendBaseUrl = process.env.BACKEND_BASE_URL || 'https://resqfood-backend-qqap.onrender.com';
     const verifyUrl = `${backendBaseUrl.replace(/\/$/, '')}/api/claims/verify/${claim.verificationToken}`;
 
     try {

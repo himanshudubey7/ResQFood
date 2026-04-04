@@ -90,7 +90,7 @@ const claimListing = async (req, res, next) => {
       }
     );
 
-    const backendBaseUrl = process.env.BACKEND_BASE_URL || 'http://localhost:5000';
+    const backendBaseUrl = process.env.BACKEND_BASE_URL || 'https://resqfood-backend-qqap.onrender.com';
     const verifyUrl = `${backendBaseUrl.replace(/\/$/, '')}/api/claims/verify/${verificationToken}`;
 
     try {

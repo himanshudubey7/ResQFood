@@ -29,7 +29,7 @@ const AdminDashboard = () => {
     
     // Real-Time Socket Connection
     const token = localStorage.getItem('resqfood_token');
-    socket = io(import.meta.env.VITE_SERVER_URL || 'http://localhost:5000', {
+    socket = io(import.meta.env.VITE_SERVER_URL || 'https://resqfood-backend-qqap.onrender.com', {
         auth: { token }
     });
 
