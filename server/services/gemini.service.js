@@ -1,5 +1,3 @@
-const { GoogleGenerativeAI } = require('@google/generative-ai');
-
 const buildListingPrompt = ({ listing, preferredLanguage = 'English' }) => {
   const donorName = listing?.donorId?.name || 'Unknown donor';
   const orgName = listing?.donorId?.organizationId?.name || 'Unknown organization';
@@ -32,18 +30,46 @@ Rules:
 };
 
 const generateListingChatResponse = async ({ userMessage, listing, preferredLanguage = 'English' }) => {
-  if (!process.env.GEMINI_API_KEY) {
+  const openRouterKey = (process.env.OPEN_ROUTER || '').trim();
+  if (!openRouterKey) {
     return 'AI assistant is not configured right now.';
   }
 
-  const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-  const model = genAI.getGenerativeModel({
-    model: 'gemini-2.5-flash',
-    systemInstruction: buildListingPrompt({ listing, preferredLanguage }),
+  const systemPrompt = buildListingPrompt({ listing, preferredLanguage });
+  const model = process.env.OPEN_ROUTER_MODEL || 'google/gemini-2.5-flash';
+
+  const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${openRouterKey}`,
+      'Content-Type': 'application/json',
+      'HTTP-Referer': process.env.CLIENT_URL || 'http://localhost:5173',
+      'X-Title': 'ResQFood Listing Assistant',
+    },
+    body: JSON.stringify({
+      model,
+      messages: [
+        { role: 'system', content: systemPrompt },
+        { role: 'user', content: userMessage },
+      ],
+      temperature: 0.3,
+      max_tokens: 220,
+    }),
   });
 
-  const result = await model.generateContent(userMessage);
-  const text = result?.response?.text?.() || '';
+  if (!response.ok) {
+    let details = '';
+    try {
+      const body = await response.json();
+      details = body?.error?.message || JSON.stringify(body);
+    } catch {
+      details = await response.text();
+    }
+    throw new Error(`OpenRouter request failed: ${response.status} ${details}`);
+  }
+
+  const data = await response.json();
+  const text = data?.choices?.[0]?.message?.content || '';
   return text || 'I can only help with questions about this current listing.';
 };
 
