@@ -156,7 +156,7 @@ const claimListing = async (req, res, next) => {
 // @route   GET /api/claims/verify/:token
 const verifyClaimByToken = async (req, res, next) => {
   try {
-    const clientUrl = process.env.CLIENT_URL || 'http://localhost:5173';
+    const clientUrl = process.env.CLIENT_URL || 'https://res-q-food-five.vercel.app';
     const { token } = req.params;
     const claim = await Claim.findOne({ verificationToken: token }).populate('listingId ngoId');
 
