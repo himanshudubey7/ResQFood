@@ -16,6 +16,7 @@ const notificationSchema = new mongoose.Schema(
         'pickup_assigned',
         'pickup_status',
         'pickup_completed',
+        'claim_confirmed',
         'user_verified',
         'system',
       ],

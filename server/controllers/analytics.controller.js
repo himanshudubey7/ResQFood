@@ -7,20 +7,20 @@ const User = require('../models/User');
 // @route   GET /api/analytics/public-overview
 const getPublicOverview = async (req, res, next) => {
   try {
-    const [deliveredListings, donorCount, ngoCount, totalClaims] = await Promise.all([
-      FoodListing.countDocuments({ status: 'delivered' }),
+    const [deliveredClaims, donorCount, ngoCount, totalClaims] = await Promise.all([
+      Claim.countDocuments({ status: 'delivered' }),
       User.countDocuments({ role: 'donor', isBanned: false }),
       User.countDocuments({ role: 'ngo', isBanned: false }),
       Claim.countDocuments(),
     ]);
 
-    const mealsSavedAgg = await FoodListing.aggregate([
+    const mealsSavedAgg = await Claim.aggregate([
       { $match: { status: 'delivered' } },
-      { $group: { _id: null, total: { $sum: '$quantity' } } },
+      { $group: { _id: null, total: { $sum: '$claimedQuantity' } } },
     ]);
 
     const mealsRedistributed = mealsSavedAgg[0]?.total || 0;
-    const claimRate = totalClaims > 0 ? Math.round((deliveredListings / totalClaims) * 100) : 0;
+    const claimRate = totalClaims > 0 ? Math.round((deliveredClaims / totalClaims) * 100) : 0;
 
     res.json({
       success: true,
@@ -62,10 +62,10 @@ const getOverview = async (req, res, next) => {
       Pickup.countDocuments({ status: 'delivered' }),
     ]);
 
-    // Meals saved (sum of quantities from delivered listings)
-    const mealsSaved = await FoodListing.aggregate([
+    // Meals saved (sum of quantities from delivered claims)
+    const mealsSaved = await Claim.aggregate([
       { $match: { status: 'delivered' } },
-      { $group: { _id: null, total: { $sum: '$quantity' } } },
+      { $group: { _id: null, total: { $sum: '$claimedQuantity' } } },
     ]);
 
     // Distribution by category

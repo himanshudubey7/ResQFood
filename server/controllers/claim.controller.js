@@ -5,6 +5,9 @@ const { calculateFairnessScore } = require('../services/fairness.service');
 const { sendMail } = require('../services/mail.service');
 const crypto = require('crypto');
 
+const hashOtp = (otp) => crypto.createHash('sha256').update(String(otp)).digest('hex');
+const generateOtp = () => String(Math.floor(100000 + Math.random() * 900000));
+
 // @desc    Claim a listing (supports partial quantity with verification workflow)
 // @route   POST /api/listings/:id/claim
 const claimListing = async (req, res, next) => {
@@ -194,6 +197,150 @@ const verifyClaimByToken = async (req, res, next) => {
   }
 };
 
+// @desc    Donor sends delivery OTP to NGO email for approved claim
+// @route   POST /api/claims/:claimId/send-delivery-otp
+const sendDeliveryOtp = async (req, res, next) => {
+  try {
+    if (req.user.role !== 'donor' && req.user.role !== 'admin') {
+      return res.status(403).json({ success: false, message: 'Only donor can send delivery OTP' });
+    }
+
+    const { claimId } = req.params;
+    const claim = await Claim.findById(claimId)
+      .populate('listingId', 'title donorId status claimedBy')
+      .populate('ngoId', 'name email');
+
+    if (!claim || !claim.listingId || !claim.ngoId) {
+      return res.status(404).json({ success: false, message: 'Claim not found' });
+    }
+
+    const isOwner = claim.listingId.donorId?.toString() === req.user._id.toString();
+    if (!isOwner && req.user.role !== 'admin') {
+      return res.status(403).json({ success: false, message: 'Not authorized for this claim' });
+    }
+
+    if (claim.status !== 'approved') {
+      return res.status(400).json({ success: false, message: 'OTP can be sent only for approved claims' });
+    }
+
+    const otp = generateOtp();
+    claim.deliveryOtpHash = hashOtp(otp);
+    claim.deliveryOtpSentAt = new Date();
+    claim.deliveryOtpExpiresAt = new Date(Date.now() + 10 * 60 * 1000);
+    await claim.save();
+
+    await sendMail({
+      to: claim.ngoId.email,
+      subject: `Delivery OTP for ${claim.listingId.title}`,
+      html: `
+        <p>Hello ${claim.ngoId.name},</p>
+        <p>Your delivery OTP is:</p>
+        <p style="font-size:24px;font-weight:700;letter-spacing:2px;">${otp}</p>
+        <p>Share this OTP with donor after receiving food.</p>
+        <p>This OTP expires in 10 minutes.</p>
+      `,
+      text: `Delivery OTP: ${otp}. Share this OTP with donor after receiving food. Valid for 10 minutes.`,
+    });
+
+    await Notification.create({
+      userId: claim.ngoId._id,
+      type: 'claim_confirmed',
+      title: 'Delivery OTP Sent',
+      message: `Delivery OTP has been sent to your email for "${claim.listingId.title}"`,
+      data: { listingId: claim.listingId._id, claimId: claim._id },
+    });
+
+    res.json({
+      success: true,
+      message: 'OTP sent to NGO email',
+      data: { otpSentAt: claim.deliveryOtpSentAt, otpExpiresAt: claim.deliveryOtpExpiresAt },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// @desc    Donor verifies delivery OTP and marks claim delivered
+// @route   POST /api/claims/:claimId/verify-delivery-otp
+const verifyDeliveryOtp = async (req, res, next) => {
+  try {
+    if (req.user.role !== 'donor' && req.user.role !== 'admin') {
+      return res.status(403).json({ success: false, message: 'Only donor can verify delivery OTP' });
+    }
+
+    const { claimId } = req.params;
+    const otp = String(req.body.otp || '').trim();
+
+    if (!/^\d{6}$/.test(otp)) {
+      return res.status(400).json({ success: false, message: 'Please enter a valid 6-digit OTP' });
+    }
+
+    const claim = await Claim.findById(claimId)
+      .populate('listingId', 'title donorId status claimedBy claimedAt deliveredAt')
+      .populate('ngoId', 'name');
+
+    if (!claim || !claim.listingId) {
+      return res.status(404).json({ success: false, message: 'Claim not found' });
+    }
+
+    const isOwner = claim.listingId.donorId?.toString() === req.user._id.toString();
+    if (!isOwner && req.user.role !== 'admin') {
+      return res.status(403).json({ success: false, message: 'Not authorized for this claim' });
+    }
+
+    if (claim.status === 'delivered') {
+      return res.status(400).json({ success: false, message: 'Claim is already delivered' });
+    }
+
+    if (claim.status !== 'approved') {
+      return res.status(400).json({ success: false, message: 'Only approved claims can be marked delivered' });
+    }
+
+    if (!claim.deliveryOtpHash || !claim.deliveryOtpExpiresAt) {
+      return res.status(400).json({ success: false, message: 'No active OTP found. Please send OTP first.' });
+    }
+
+    if (claim.deliveryOtpExpiresAt.getTime() < Date.now()) {
+      return res.status(400).json({ success: false, message: 'OTP expired. Please send a new OTP.' });
+    }
+
+    const incomingHash = hashOtp(otp);
+    if (incomingHash !== claim.deliveryOtpHash) {
+      return res.status(400).json({ success: false, message: 'Invalid OTP' });
+    }
+
+    claim.status = 'delivered';
+    claim.deliveryOtpHash = '';
+    claim.deliveryOtpExpiresAt = null;
+    claim.deliveryOtpSentAt = null;
+    claim.deliveredAt = new Date();
+    await claim.save();
+
+    const listing = claim.listingId;
+    if (listing.claimedBy?.toString() === claim.ngoId?._id?.toString() && listing.status === 'claimed') {
+      listing.status = 'delivered';
+      listing.deliveredAt = new Date();
+      await listing.save();
+    }
+
+    await Notification.create({
+      userId: claim.ngoId._id,
+      type: 'claim_confirmed',
+      title: 'Delivery Verified',
+      message: `Your claim for "${listing.title}" has been marked delivered by donor`,
+      data: { listingId: listing._id, claimId: claim._id },
+    });
+
+    res.json({
+      success: true,
+      message: 'Order delivered successfully',
+      data: claim,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 // @desc    Get claims by NGO
 // @route   GET /api/claims
 const getMyClaims = async (req, res, next) => {
@@ -204,7 +351,7 @@ const getMyClaims = async (req, res, next) => {
     if (status) {
       query.status = status;
     } else {
-      query.status = { $in: ['pending', 'approved'] };
+      query.status = { $in: ['pending', 'approved', 'delivered'] };
     }
 
     const total = await Claim.countDocuments(query);
@@ -348,6 +495,8 @@ const getClaimsForListing = async (req, res, next) => {
 module.exports = {
   claimListing,
   verifyClaimByToken,
+  sendDeliveryOtp,
+  verifyDeliveryOtp,
   getMyClaims,
   getAllClaims,
   getClaimsForListing,

@@ -19,7 +19,7 @@ const claimSchema = new mongoose.Schema(
     },
     status: {
       type: String,
-      enum: ['pending', 'approved', 'rejected', 'cancelled'],
+      enum: ['pending', 'approved', 'delivered', 'rejected', 'cancelled'],
       default: 'pending',
     },
     verificationToken: {
@@ -41,6 +41,22 @@ const claimSchema = new mongoose.Schema(
       default: false,
     },
     confirmedAt: {
+      type: Date,
+      default: null,
+    },
+    deliveryOtpHash: {
+      type: String,
+      default: '',
+    },
+    deliveryOtpSentAt: {
+      type: Date,
+      default: null,
+    },
+    deliveryOtpExpiresAt: {
+      type: Date,
+      default: null,
+    },
+    deliveredAt: {
       type: Date,
       default: null,
     },

@@ -64,6 +64,8 @@ export const claimsAPI = {
   getAll: (params) => api.get('/claims/all', { params }),
   getReceived: (params) => api.get('/claims/received', { params }),
   getByListing: (listingId) => api.get(`/claims/listing/${listingId}`),
+  sendDeliveryOtp: (claimId) => api.post(`/claims/${claimId}/send-delivery-otp`),
+  verifyDeliveryOtp: (claimId, data) => api.post(`/claims/${claimId}/verify-delivery-otp`, data),
 };
 
 // ===== Pickups API =====

@@ -63,11 +63,6 @@ const MyClaims = () => {
                   <Badge className={getStatusColor(claim.status)}>
                     {getStatusLabel(claim.status)}
                   </Badge>
-                  {listing.assignedVolunteer && (
-                    <Badge variant="purple" size="xs">
-                      🚗 {listing.assignedVolunteer.name}
-                    </Badge>
-                  )}
                 </div>
               </Card>
             );

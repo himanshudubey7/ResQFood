@@ -133,7 +133,8 @@ const LandingPage = () => {
               <div className="mt-5 rounded-2xl border border-surface-200 bg-gradient-to-r from-secondary to-secondary/85 p-4 text-white">
                 <p className="text-sm font-semibold uppercase tracking-wider text-primary">Live Efficiency Index</p>
                 <p className="mt-1 heading-font text-2xl font-bold">
-                  {`${Number(publicStats.claimRate || 0)}% Claim-to-Delivery Efficiency`}
+                  {/* {`${Number(publicStats.claimRate || 0)}% Claim-to-Delivery Efficiency`} */}
+                  {`Better Claim-to-Delivery Efficiency`}
                 </p>
               </div>
             </div>
