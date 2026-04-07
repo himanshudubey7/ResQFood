@@ -160,23 +160,24 @@ const claimListing = async (req, res, next) => {
 const verifyClaimByToken = async (req, res, next) => {
   try {
     const clientUrl = process.env.CLIENT_URL || 'https://res-q-food-00.vercel.app';
+    const resultBaseUrl = `${clientUrl.replace(/\/$/, '')}/verify-claim`;
     const { token } = req.params;
     const claim = await Claim.findOne({ verificationToken: token }).populate('listingId ngoId');
 
     if (!claim) {
-      return res.redirect(`${clientUrl}/ngo/claims?verify=invalid`);
+      return res.redirect(`${resultBaseUrl}?status=invalid`);
     }
 
     if (claim.status === 'approved' && claim.isPickupConfirmed) {
-      return res.redirect(`${clientUrl}/ngo/claims?verify=already-confirmed`);
+      return res.redirect(`${resultBaseUrl}?status=already-confirmed`);
     }
 
     if (claim.status !== 'pending') {
-      return res.redirect(`${clientUrl}/ngo/claims?verify=${encodeURIComponent(claim.status)}`);
+      return res.redirect(`${resultBaseUrl}?status=${encodeURIComponent(claim.status)}`);
     }
 
     if (claim.verificationDeadline && claim.verificationDeadline.getTime() < Date.now()) {
-      return res.redirect(`${clientUrl}/ngo/claims?verify=expired`);
+      return res.redirect(`${resultBaseUrl}?status=expired`);
     }
 
     claim.status = 'approved';
@@ -195,7 +196,7 @@ const verifyClaimByToken = async (req, res, next) => {
       });
     }
 
-    res.redirect(`${clientUrl}/ngo/claims?verify=success`);
+    res.redirect(`${resultBaseUrl}?status=success`);
   } catch (error) {
     next(error);
   }

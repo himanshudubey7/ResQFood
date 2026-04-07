@@ -19,6 +19,7 @@ import ListingDetail from './pages/donor/ListingDetail';
 import ReceivedClaims from './pages/donor/ReceivedClaims';
 import DonorProfile from './pages/donor/DonorProfile';
 import ComplaintCenter from './pages/common/ComplaintCenter';
+import ClaimVerificationPage from './pages/common/ClaimVerificationPage';
 
 // NGO Pages
 import NgoDashboard from './pages/ngo/NgoDashboard';
@@ -75,6 +76,7 @@ const App = () => {
           <Route path="/" element={isAuthenticated ? <Navigate to={getRoleHomeRoute(user?.role)} replace /> : <LandingPage />} />
           <Route path="/login" element={isAuthenticated ? <Navigate to={getRoleHomeRoute(user?.role)} replace /> : <LoginPage />} />
           <Route path="/register" element={isAuthenticated ? <Navigate to={getRoleHomeRoute(user?.role)} replace /> : <RegisterPage />} />
+          <Route path="/verify-claim" element={<ClaimVerificationPage />} />
 
           {/* Protected Routes inside Layout */}
           <Route element={<MainLayout />}>
