@@ -52,6 +52,7 @@ const getTransporter = () => {
     host,
     port,
     secure: port === 465,
+    family: 4,
     connectionTimeout: 10000,
     greetingTimeout: 10000,
     socketTimeout: 15000,
@@ -69,9 +70,8 @@ const sendMail = async ({ to, subject, html, text }) => {
   const user = process.env.EMAIL_USER;
   const fromName = process.env.EMAIL_FROM_NAME || 'ResQFood';
   const resendApiKey = String(process.env.RESEND_API_KEY || '').trim();
-  const nodeEnv = String(process.env.NODE_ENV || 'development').toLowerCase();
-  const allowSmtpInProd = String(process.env.ALLOW_SMTP_IN_PROD || '').toLowerCase() === 'true';
-  const shouldTrySmtp = Boolean(smtp && user && (nodeEnv !== 'production' || allowSmtpInProd));
+  const useResendFallback = String(process.env.USE_RESEND_FALLBACK || '').toLowerCase() === 'true';
+  const shouldTrySmtp = Boolean(smtp && user);
   const smtpFrom = process.env.EMAIL_FROM || `${fromName} <${user}>`;
   const resendFrom = process.env.MAIL_FROM || process.env.EMAIL_FROM || `${fromName} <onboarding@resend.dev>`;
   const recipients = Array.isArray(to) ? to : [to];
@@ -99,11 +99,15 @@ const sendMail = async ({ to, subject, html, text }) => {
       return { id: info.messageId, accepted, rejected: info.rejected, provider: 'smtp' };
     } catch (smtpError) {
       lastSendError = smtpError;
-      console.warn(`SMTP send failed, trying Resend fallback: ${smtpError.message}`);
+      if (useResendFallback && resendApiKey) {
+        console.warn(`SMTP send failed, trying Resend fallback: ${smtpError.message}`);
+      } else {
+        console.warn(`SMTP send failed: ${smtpError.message}`);
+      }
     }
   }
 
-  if (resendApiKey) {
+  if (useResendFallback && resendApiKey) {
     try {
       const body = JSON.stringify({
         from: resendFrom,
@@ -141,14 +145,10 @@ const sendMail = async ({ to, subject, html, text }) => {
   }
 
   if (lastSendError) {
-    throw new Error(`Email delivery failed. SMTP failed and RESEND_API_KEY is missing. SMTP reason: ${lastSendError.message}`);
+    throw new Error(`Email delivery failed: ${lastSendError.message}`);
   }
 
-  if (nodeEnv === 'production' && !allowSmtpInProd) {
-    throw new Error('Email service is not configured for production: set RESEND_API_KEY (recommended on Render)');
-  }
-
-  throw new Error('Email service is not configured: set SMTP credentials or RESEND_API_KEY');
+  throw new Error('Email service is not configured: set SMTP credentials');
 };
 
 module.exports = { sendMail };
