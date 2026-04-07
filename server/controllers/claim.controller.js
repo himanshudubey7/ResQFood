@@ -95,47 +95,8 @@ const claimListing = async (req, res, next) => {
     const backendBaseUrl = process.env.BACKEND_BASE_URL || 'https://resqfood-backend-qqap.onrender.com';
     const verifyUrl = `${backendBaseUrl.replace(/\/$/, '')}/api/claims/verify/${verificationToken}`;
 
-    try {
-      await sendMail({
-        to: req.user.email,
-        subject: `Claim received for ${listing.title}`,
-        html: `
-          <p>Hello ${req.user.name},</p>
-          <p>You claimed <strong>${requestedQty} ${listing.unit}</strong> of <strong>${listing.title}</strong>.</p>
-          <p>Pickup address: ${listing.address || 'N/A'}</p>
-          <p>You will receive a verification mail in 30 seconds.</p>
-          <p>Verification link stays valid for 10 minutes from claim time.</p>
-        `,
-        text: `You claimed ${requestedQty} ${listing.unit} of ${listing.title}. Pickup: ${listing.address || 'N/A'}. Verification mail will follow in 30 seconds and the link will stay valid for 10 minutes.`,
-      });
-    } catch (mailErr) {
-      console.error('Immediate claim mail failed:', mailErr.message);
-    }
-
-    await Notification.create({
-      userId: listing.donorId._id,
-      type: 'listing_claimed',
-      title: fullyClaimed ? 'Listing Fully Claimed' : 'Partial Claim Received',
-      message: `${req.user.name} claimed ${requestedQty} ${listing.unit} from "${listing.title}"`,
-      data: { listingId: listing._id, claimId: claim._id },
-    });
-
+    const donorUserId = listing.donorId?._id || listing.donorId;
     const io = req.app.get('io');
-    if (io) {
-      io.to(`user_${listing.donorId._id}`).emit('listing:claimed', {
-        listing,
-        claimedQuantity: requestedQty,
-        claimedBy: { name: req.user.name, email: req.user.email },
-      });
-
-      io.to('role_ngo').emit('listing:updated', listing);
-
-      io.to(`user_${listing.donorId._id}`).emit('notification:new', {
-        type: 'listing_claimed',
-        title: fullyClaimed ? 'Listing Fully Claimed' : 'Partial Claim Received',
-        message: `${req.user.name} claimed ${requestedQty} ${listing.unit} from "${listing.title}"`,
-      });
-    }
 
     res.json({
       success: true,
@@ -149,6 +110,56 @@ const claimListing = async (req, res, next) => {
           verifyUrl,
         },
       },
+    });
+
+    // Post-response side-effects keep claim API fast for UI and avoid long button spinners.
+    Promise.resolve().then(async () => {
+      try {
+        await sendMail({
+          to: req.user.email,
+          subject: `Claim received for ${listing.title}`,
+          html: `
+            <p>Hello ${req.user.name},</p>
+            <p>You claimed <strong>${requestedQty} ${listing.unit}</strong> of <strong>${listing.title}</strong>.</p>
+            <p>Pickup address: ${listing.address || 'N/A'}</p>
+            <p>You will receive a verification mail in 30 seconds.</p>
+            <p>Verification link stays valid for 10 minutes from claim time.</p>
+          `,
+          text: `You claimed ${requestedQty} ${listing.unit} of ${listing.title}. Pickup: ${listing.address || 'N/A'}. Verification mail will follow in 30 seconds and the link will stay valid for 10 minutes.`,
+        });
+      } catch (mailErr) {
+        console.error('Immediate claim mail failed:', mailErr.message);
+      }
+
+      try {
+        await Notification.create({
+          userId: donorUserId,
+          type: 'listing_claimed',
+          title: fullyClaimed ? 'Listing Fully Claimed' : 'Partial Claim Received',
+          message: `${req.user.name} claimed ${requestedQty} ${listing.unit} from "${listing.title}"`,
+          data: { listingId: listing._id, claimId: claim._id },
+        });
+      } catch (notificationErr) {
+        console.error('Claim notification creation failed:', notificationErr.message);
+      }
+
+      if (io) {
+        io.to(`user_${donorUserId}`).emit('listing:claimed', {
+          listing,
+          claimedQuantity: requestedQty,
+          claimedBy: { name: req.user.name, email: req.user.email },
+        });
+
+        io.to('role_ngo').emit('listing:updated', listing);
+
+        io.to(`user_${donorUserId}`).emit('notification:new', {
+          type: 'listing_claimed',
+          title: fullyClaimed ? 'Listing Fully Claimed' : 'Partial Claim Received',
+          message: `${req.user.name} claimed ${requestedQty} ${listing.unit} from "${listing.title}"`,
+        });
+      }
+    }).catch((sideEffectErr) => {
+      console.error('Claim side-effects failed:', sideEffectErr.message);
     });
   } catch (error) {
     next(error);
