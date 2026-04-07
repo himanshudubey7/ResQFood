@@ -3,8 +3,6 @@ const dns = require('dns');
 
 dns.setDefaultResultOrder('ipv4first');
 
-let transporter;
-
 const withTimeout = (promise, timeoutMs, message) =>
   Promise.race([
     promise,
@@ -13,17 +11,10 @@ const withTimeout = (promise, timeoutMs, message) =>
     }),
   ]);
 
-const getTransporter = () => {
-  if (transporter) return transporter;
-
-  const host = process.env.EMAIL_HOST;
-  const port = Number(process.env.EMAIL_PORT || 587);
-  const user = process.env.EMAIL_USER;
-  const pass = String(process.env.EMAIL_PASS || '').replace(/\s+/g, '');
-
+const createTransporter = (host, port, user, pass) => {
   if (!host || !user || !pass) return null;
 
-  transporter = nodemailer.createTransport({
+  return nodemailer.createTransport({
     host,
     port,
     secure: port === 465,
@@ -36,42 +27,71 @@ const getTransporter = () => {
       pass,
     },
   });
+};
 
-  return transporter;
+const getPortCandidates = () => {
+  const host = process.env.EMAIL_HOST;
+  const configuredPort = Number(process.env.EMAIL_PORT || 587);
+  const fallbackPorts = String(process.env.EMAIL_FALLBACK_PORTS || '465')
+    .split(',')
+    .map((value) => Number(String(value).trim()))
+    .filter((value) => Number.isInteger(value) && value > 0);
+  const user = process.env.EMAIL_USER;
+  const pass = String(process.env.EMAIL_PASS || '').replace(/\s+/g, '');
+
+  return {
+    host,
+    user,
+    pass,
+    ports: [configuredPort, ...fallbackPorts.filter((port) => port !== configuredPort)],
+  };
 };
 
 const sendMail = async ({ to, subject, html, text }) => {
-  const smtp = getTransporter();
+  const config = getPortCandidates();
   const user = process.env.EMAIL_USER;
   const fromName = process.env.EMAIL_FROM_NAME || 'ResQFood';
-  const shouldTrySmtp = Boolean(smtp && user);
+  const shouldTrySmtp = Boolean(config.host && config.user && config.pass && user);
   const smtpFrom = process.env.EMAIL_FROM || `${fromName} <${user}>`;
   const recipients = Array.isArray(to) ? to : [to];
 
   if (shouldTrySmtp) {
-    try {
-      const info = await withTimeout(
-        smtp.sendMail({
-          from: smtpFrom,
-          to: recipients.join(','),
-          subject,
-          html,
-          text,
-        }),
-        15000,
-        'SMTP request timed out'
-      );
+    let lastError = null;
 
-      const accepted = Array.isArray(info.accepted) ? info.accepted : [];
-      if (!accepted.length) {
-        throw new Error(`SMTP did not accept any recipients. Rejected: ${(info.rejected || []).join(', ') || 'unknown'}`);
+    for (const port of config.ports) {
+      const smtp = createTransporter(config.host, port, config.user, config.pass);
+      try {
+        const info = await withTimeout(
+          smtp.sendMail({
+            from: smtpFrom,
+            to: recipients.join(','),
+            subject,
+            html,
+            text,
+          }),
+          15000,
+          `SMTP request timed out on port ${port}`
+        );
+
+        const accepted = Array.isArray(info.accepted) ? info.accepted : [];
+        if (!accepted.length) {
+          throw new Error(`SMTP did not accept any recipients. Rejected: ${(info.rejected || []).join(', ') || 'unknown'}`);
+        }
+
+        return {
+          id: info.messageId,
+          accepted,
+          rejected: info.rejected,
+          provider: 'smtp',
+          port,
+        };
+      } catch (smtpError) {
+        lastError = smtpError;
+        console.warn(`SMTP send failed on ${config.host}:${port} - ${smtpError.message}`);
       }
-
-      return { id: info.messageId, accepted, rejected: info.rejected, provider: 'smtp' };
-    } catch (smtpError) {
-      console.warn(`SMTP send failed: ${smtpError.message}`);
-      throw new Error(`Email delivery failed: ${smtpError.message}`);
     }
+
+    throw new Error(`Email delivery failed: ${lastError ? lastError.message : 'Unknown SMTP error'}`);
   }
 
   throw new Error('Email service is not configured: set SMTP credentials');
