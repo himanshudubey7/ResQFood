@@ -192,7 +192,10 @@ const forgotPassword = async (req, res, next) => {
       user.resetPasswordToken = undefined;
       user.resetPasswordExpire = undefined;
       await user.save({ validateBeforeSave: false });
-      return next(mailError);
+      return res.status(503).json({
+        success: false,
+        message: 'Email service is temporarily unavailable. Please try again in a few minutes.',
+      });
     }
 
     res.json({

@@ -41,14 +41,15 @@ const sendMail = async ({ to, subject, html, text }) => {
   const user = process.env.EMAIL_USER;
   const fromName = process.env.EMAIL_FROM_NAME || 'ResQFood';
   const resendApiKey = String(process.env.RESEND_API_KEY || '').trim();
-  const from = process.env.EMAIL_FROM || process.env.MAIL_FROM || `${fromName} <${user}>`;
+  const smtpFrom = process.env.EMAIL_FROM || `${fromName} <${user}>`;
+  const resendFrom = process.env.MAIL_FROM || process.env.EMAIL_FROM || `${fromName} <onboarding@resend.dev>`;
   const recipients = Array.isArray(to) ? to : [to];
 
   if (smtp && user) {
     try {
       const info = await withTimeout(
         smtp.sendMail({
-          from,
+          from: smtpFrom,
           to: recipients.join(','),
           subject,
           html,
@@ -73,7 +74,7 @@ const sendMail = async ({ to, subject, html, text }) => {
           Authorization: `Bearer ${resendApiKey}`,
         },
         body: JSON.stringify({
-          from,
+          from: resendFrom,
           to: recipients,
           subject,
           html,
